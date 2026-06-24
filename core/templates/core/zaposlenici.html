@@ -1,0 +1,70 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Zaposlenici{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 style="color: #2d3748; font-weight: 600;">Zaposlenici</h4>
+    <a href="{% url 'zaposlenik_dodaj' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Dodaj zaposlenika
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead style="background-color: #f9fafb;">
+                <tr>
+                    <th class="px-3">Ime i prezime</th>
+                    <th>Pozicija</th>
+                    <th>Email</th>
+                    <th>Telefon</th>
+                    <th>Ugovor</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for z in zaposlenici %}
+                <tr>
+                    <td class="px-3">{{ z.prezime }} {{ z.ime }}</td>
+                    <td>{{ z.pozicija }}</td>
+                    <td>{{ z.email }}</td>
+                    <td>{{ z.telefon }}</td>
+                    <td>
+                        {% if z.aktivni_ugovor %}
+                            {{ z.aktivni_ugovor.get_tip_display }}
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if z.aktivan %}
+                            <span class="badge" style="background-color: #c6f6d5; color: #276749;">Aktivan</span>
+                        {% else %}
+                            <span class="badge" style="background-color: #fed7d7; color: #9b2c2c;">Neaktivan</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-3">
+                        <a href="{% url 'zaposlenik_uredi' z.pk %}" class="btn btn-sm btn-outline-secondary me-1">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form method="post" action="{% url 'zaposlenik_obrisi' z.pk %}" class="d-inline"
+                              onsubmit="return confirm('Obrisati zaposlenika {{ z.prezime }} {{ z.ime }}?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">Nema zaposlenika.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

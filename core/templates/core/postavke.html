@@ -1,0 +1,147 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Postavke{% endblock %}
+
+{% block content %}
+<h4 class="mb-4" style="color: #2d3748; font-weight: 600;">Postavke</h4>
+
+<div class="row g-4">
+
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #f9fafb;">
+                <span style="font-weight: 600;">Pozicije</span>
+                <a href="{% url 'pozicija_dodaj' %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-lg"></i>
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        {% for p in pozicije %}
+                        <tr>
+                            <td class="px-3">{{ p.naziv }}</td>
+                            <td class="text-end pe-3">
+                                <a href="{% url 'pozicija_uredi' p.pk %}" class="btn btn-sm btn-outline-secondary me-1">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="post" action="{% url 'pozicija_obrisi' p.pk %}" class="d-inline"
+                                      onsubmit="return confirm('Obrisati poziciju?')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td class="text-muted text-center py-3">Nema pozicija.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #f9fafb;">
+                <span style="font-weight: 600;">Kategorije</span>
+                <a href="{% url 'kategorija_dodaj' %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-lg"></i>
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        {% for k in kategorije %}
+                        <tr>
+                            <td class="px-3">{{ k.naziv }} <small class="text-muted">({{ k.get_tip_display }})</small></td>
+                            <td class="text-end pe-3">
+                                <a href="{% url 'kategorija_uredi' k.pk %}" class="btn btn-sm btn-outline-secondary me-1">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="post" action="{% url 'kategorija_obrisi' k.pk %}" class="d-inline"
+                                      onsubmit="return confirm('Obrisati kategoriju?')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td class="text-muted text-center py-3">Nema kategorija.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #f9fafb;">
+                <span style="font-weight: 600;">Jedinice mjere</span>
+                <a href="{% url 'jedinica_dodaj' %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-lg"></i>
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        {% for j in jedinice %}
+                        <tr>
+                            <td class="px-3">{{ j.naziv }}</td>
+                            <td class="text-end pe-3">
+                                <a href="{% url 'jedinica_uredi' j.pk %}" class="btn btn-sm btn-outline-secondary me-1">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="post" action="{% url 'jedinica_obrisi' j.pk %}" class="d-inline"
+                                      onsubmit="return confirm('Obrisati jedinicu mjere?')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td class="text-muted text-center py-3">Nema jedinica mjere.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+{% if forma %}
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header" style="background-color: #f9fafb; font-weight: 600;">Dodaj / uredi</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field in forma %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size: 13px;">{{ field.label }}</label>
+                        {{ field }}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-lg me-1"></i>Spremi
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Obračun plaće{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 style="color: #2d3748; font-weight: 600;">Obračun plaće</h4>
+    <a href="{% url 'evidencija' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Natrag
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-5">
+        <div class="card mb-3">
+            <div class="card-header" style="background-color: #f9fafb; font-weight: 600;">
+                {{ evidencija.zaposlenik }} — {{ evidencija.mjesec }}/{{ evidencija.godina }}
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr>
+                        <td class="text-muted">Tip ugovora</td>
+                        <td>{{ evidencija.get_tip_ugovora_display }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Ostvareni sati</td>
+                        <td>{{ evidencija.ostvareni_sati }} h</td>
+                    </tr>
+                    {% if evidencija.tip_ugovora == 'STUDENTSKI' %}
+                    <tr>
+                        <td class="text-muted">Satnica</td>
+                        <td>{{ evidencija.satnica }} €/h</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+
+        {% if obracun %}
+        <div class="card">
+            <div class="card-header" style="background-color: #f9fafb; font-weight: 600;">
+                Rezultat obračuna
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-3">
+                    <tr>
+                        <td class="text-muted">Osnovna plaća</td>
+                        <td class="text-end">{{ obracun.osnovna_placa|floatformat:2 }} €</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Ukupni bonusi</td>
+                        <td class="text-end" style="color: #38a169;">+ {{ obracun.ukupni_dodaci|floatformat:2 }} €</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Ukupni odbitci</td>
+                        <td class="text-end" style="color: #e53e3e;">- {{ obracun.ukupni_odbitci|floatformat:2 }} €</td>
+                    </tr>
+                    <tr class="fw-bold">
+                        <td>Za isplatu</td>
+                        <td class="text-end" style="color: #667eea; font-size: 18px;">{{ obracun.za_isplatu|floatformat:2 }} €</td>
+                    </tr>
+                </table>
+                <small class="text-muted">Generirano: {{ obracun.datum_obracuna|date:"d.m.Y. H:i" }}</small>
+            </div>
+        </div>
+        {% else %}
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-calculator me-2"></i>Obračunaj plaću
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

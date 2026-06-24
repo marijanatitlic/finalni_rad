@@ -1,0 +1,71 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Unos dnevnog stanja{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 style="color: #2d3748; font-weight: 600;">Unos dnevnog stanja</h4>
+    <a href="{% url 'inventar' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Natrag
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label class="form-label text-muted" style="font-size: 13px;">Datum</label>
+                <input type="date" name="datum" class="form-control" style="width: 200px;" required>
+            </div>
+
+            <table class="table">
+                <thead style="background-color: #f9fafb;">
+                    <tr>
+                        <th>Artikl</th>
+                        <th>Kategorija</th>
+                        <th style="width: 200px;">Nabava danas</th>
+                        <th style="width: 200px;">Večernje stanje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for artikl in artikli %}
+                    <tr>
+                        <td>{{ artikl.naziv }}</td>
+                        <td class="text-muted">{{ artikl.kategorija }}</td>
+                        <td>
+                            <div class="input-group input-group-sm">
+                                <input type="number" name="nabava_{{ artikl.pk }}"
+                                       class="form-control" step="0.001" min="0"
+                                       placeholder="0">
+                                <span class="input-group-text">{{ artikl.jedinica_mjere }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="input-group input-group-sm">
+                                <input type="number" name="kolicina_{{ artikl.pk }}"
+                                       class="form-control" step="0.001" min="0"
+                                       placeholder="0">
+                                <span class="input-group-text">{{ artikl.jedinica_mjere }}</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">
+                            Nema artikala u inventaru. <a href="{% url 'artikl_dodaj' %}">Dodaj artikl</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% if artikli %}
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg me-1"></i>Spremi stanje
+            </button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}

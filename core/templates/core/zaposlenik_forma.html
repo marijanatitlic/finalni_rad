@@ -1,0 +1,84 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{% if zaposlenik %}Uredi zaposlenika{% else %}Dodaj zaposlenika{% endif %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 style="color: #2d3748; font-weight: 600;">
+        {% if zaposlenik %}Uredi zaposlenika{% else %}Dodaj zaposlenika{% endif %}
+    </h4>
+    <a href="{% url 'zaposlenici' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Natrag
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header" style="background-color: #f9fafb; font-weight: 600;">
+                Osnovni podaci
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    {% for field in z_forma %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size: 13px;">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <div class="text-danger" style="font-size: 13px;">{{ field.errors }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                    <hr>
+                    <p class="fw-semibold mb-3" style="font-size: 15px;">Ugovor</p>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size: 13px;">Tip ugovora</label>
+                        {{ u_forma.tip }}
+                        {% if u_forma.tip.errors %}
+                            <div class="text-danger" style="font-size: 13px;">{{ u_forma.tip.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3" id="polje-satnica" style="display: none;">
+                        <label class="form-label text-muted" style="font-size: 13px;">Satnica (€/h)</label>
+                        {{ u_forma.satnica }}
+                        {% if u_forma.satnica.errors %}
+                            <div class="text-danger" style="font-size: 13px;">{{ u_forma.satnica.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3" id="polje-fiksna" style="display: none;">
+                        <label class="form-label text-muted" style="font-size: 13px;">Fiksna plaća (€/mj)</label>
+                        {{ u_forma.fiksna_placa }}
+                        {% if u_forma.fiksna_placa.errors %}
+                            <div class="text-danger" style="font-size: 13px;">{{ u_forma.fiksna_placa.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 mt-2">
+                        <i class="bi bi-check-lg me-1"></i>Spremi
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const tipSelect = document.querySelector('[name="tip"]');
+
+    function prikaziPolja() {
+        const tip = tipSelect.value;
+        document.getElementById('polje-satnica').style.display = tip === 'STUDENTSKI' ? 'block' : 'none';
+        document.getElementById('polje-fiksna').style.display  = tip === 'STALNI'     ? 'block' : 'none';
+    }
+
+    tipSelect.addEventListener('change', prikaziPolja);
+    prikaziPolja();
+</script>
+
+{% endblock %}

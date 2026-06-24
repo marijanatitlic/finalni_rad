@@ -1,0 +1,69 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Inventar{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 style="color: #2d3748; font-weight: 600;">Inventar</h4>
+    <div>
+        <a href="{% url 'dnevno_stanje_dodaj' %}" class="btn btn-outline-primary me-2">
+            <i class="bi bi-clipboard-check me-1"></i>Unos stanja
+        </a>
+        <a href="{% url 'artikl_dodaj' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>Dodaj artikl
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead style="background-color: #f9fafb;">
+                <tr>
+                    <th class="px-3">Artikl</th>
+                    <th>Kategorija</th>
+                    <th>Trenutno stanje</th>
+                    <th>Minimalna razina</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for artikl in artikli %}
+                <tr>
+                    <td class="px-3">{{ artikl.naziv }}</td>
+                    <td>{{ artikl.kategorija }}</td>
+                    <td>{{ artikl.trenutno_stanje }} {{ artikl.jedinica_mjere }}</td>
+                    <td>{{ artikl.minimalna_razina }} {{ artikl.jedinica_mjere }}</td>
+                    <td>
+                        {% if artikl.ispod_minimuma %}
+                            <span class="badge" style="background-color: #fed7d7; color: #9b2c2c;">
+                                <i class="bi bi-exclamation-triangle me-1"></i>Ispod minimuma
+                            </span>
+                        {% else %}
+                            <span class="badge" style="background-color: #c6f6d5; color: #276749;">U redu</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-3">
+                        <a href="{% url 'artikl_uredi' artikl.pk %}" class="btn btn-sm btn-outline-secondary me-1">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form method="post" action="{% url 'artikl_obrisi' artikl.pk %}" class="d-inline"
+                              onsubmit="return confirm('Deaktivirati artikl {{ artikl.naziv }}?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">Nema artikala u inventaru.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -54,8 +54,8 @@
                             <td class="px-3">{{ z }}</td>
                             <td>{{ z.pozicija }}</td>
                             <td>
-                                {% if z.aktivni_ugovor %}
-                                    {{ z.aktivni_ugovor.get_tip_display }}
+                                {% if z.ugovor_set.first %}
+                                    {{ z.ugovor_set.first.get_tip_display }}
                                 {% else %}
                                     <span class="text-muted">—</span>
                                 {% endif %}

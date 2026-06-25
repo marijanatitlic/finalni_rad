@@ -1,15 +1,10 @@
 from django import forms
 from .models import (
-    Zaposlenik, Ugovor, EvidencijaRada, BonusOdbitak,
-    Artikl, DnevnoStanje, Dobavljac, Racun, StavkaRacuna,
+    Pozicija, Zaposlenik, Ugovor, EvidencijaRada, BonusOdbitak,
+    Artikl, DnevnoStanje, Dobavljac, Racun,
     Trosak, Kategorija, JedinicaMjere
 )
-
-try:
-    from .models import Pozicija
-except ImportError:
-    pass
-
+from datetime import date
 
 class ZaposlenikForma(forms.ModelForm):
     class Meta:
@@ -26,7 +21,6 @@ class UgovorForma(forms.ModelForm):
         fields = ['tip', 'satnica', 'fiksna_placa']
 
 
-from datetime import date
 
 class EvidencijaRadaForma(forms.ModelForm):
     class Meta:
@@ -82,7 +76,7 @@ class DobavljacForma(forms.ModelForm):
 class RacunForma(forms.ModelForm):
     class Meta:
         model  = Racun
-        fields = ['dobavljac', 'broj_racuna', 'datum_racuna', 'datum_dospijeca', 'status', 'napomena']
+        fields = ['dobavljac', 'broj_racuna', 'datum_racuna', 'datum_dospijeca','ukupni_iznos', 'status', 'napomena']
         widgets = {
             'datum_racuna':    forms.DateInput(attrs={'type': 'date'}),
             'datum_dospijeca': forms.DateInput(attrs={'type': 'date'}),
@@ -90,10 +84,6 @@ class RacunForma(forms.ModelForm):
         }
 
 
-class StavkaRacunaForma(forms.ModelForm):
-    class Meta:
-        model  = StavkaRacuna
-        fields = ['artikl', 'kolicina', 'cijena_po_jedinici']
 
 
 class TrosakForma(forms.ModelForm):

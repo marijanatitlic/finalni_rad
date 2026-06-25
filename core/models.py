@@ -46,10 +46,7 @@ class Zaposlenik(models.Model):
     def __str__(self):
         return f"{self.prezime} {self.ime}"
 
-    @property
-    def aktivni_ugovor(self):
-        return self.ugovori.filter(aktivan=True).first()
-
+  
 class Ugovor(models.Model):
     STUDENTSKI = "STUDENTSKI"
     STALNI     = "STALNI"
@@ -58,7 +55,7 @@ class Ugovor(models.Model):
         (STALNI,     "Stalni radni odnos"),
     ]
 
-    zaposlenik    = models.ForeignKey(Zaposlenik, on_delete=models.CASCADE, related_name="ugovori")
+    zaposlenik    = models.ForeignKey(Zaposlenik, on_delete=models.CASCADE)
     tip           = models.CharField(max_length=20, choices=TIP_CHOICES)
     satnica       = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     fiksna_placa  = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -151,7 +148,7 @@ class Kategorija(models.Model):
 
 
 class JedinicaMjere(models.Model):
-    naziv = models.CharField(max_length=20, unique=True)  # kg, L, kom, g...
+    naziv = models.CharField(max_length=20, unique=True)  
 
     class Meta:
         ordering = ["naziv"]
@@ -257,29 +254,6 @@ class Racun(models.Model):
 
     def __str__(self):
         return f"Račun {self.broj_racuna} — {self.dobavljac}"
-
-
-class StavkaRacuna(models.Model):
-    racun              = models.ForeignKey(Racun, on_delete=models.CASCADE, related_name="stavke")
-    artikl             = models.ForeignKey(Artikl, on_delete=models.PROTECT, related_name="stavke_racuna")
-    kolicina           = models.DecimalField(max_digits=10, decimal_places=3)
-    cijena_po_jedinici = models.DecimalField(max_digits=10, decimal_places=2)
-    ukupno             = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-
-    class Meta:
-        verbose_name = "Stavka računa"
-        verbose_name_plural = "Stavke računa"
-
-    def save(self, *args, **kwargs):
-        self.ukupno = self.kolicina * self.cijena_po_jedinici
-        super().save(*args, **kwargs)
-        ukupno_racuna = sum(s.ukupno for s in self.racun.stavke.all())
-        Racun.objects.filter(pk=self.racun.pk).update(ukupni_iznos=ukupno_racuna)
-
-    def __str__(self):
-        return f"{self.artikl} × {self.kolicina}"
-
-
 
 
 class Trosak(models.Model):

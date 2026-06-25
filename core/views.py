@@ -8,7 +8,7 @@ from datetime import date
 from .models import (
     Pozicija, Zaposlenik, Ugovor, EvidencijaRada, BonusOdbitak, ObracunPlace,
     Kategorija, JedinicaMjere, Artikl, DnevnoStanje,
-    Dobavljac, Racun, StavkaRacuna, Trosak
+    Dobavljac, Racun, Trosak
 )
 from .forms import (
     ZaposlenikForma, UgovorForma, EvidencijaRadaForma, BonusOdbitakForma,
@@ -25,15 +25,12 @@ def dashboard(request):
     mjesec = int(request.GET.get('mjesec', danas.month))
     godina = int(request.GET.get('godina', danas.year))
 
-    
-    ukupno_zaposlenika   = Zaposlenik.objects.filter(aktivan=True).count()
-    neplaceni_racuni     = Racun.objects.filter(status=Racun.NEPLACENO).count()
-    artikli_alarm        = [a for a in Artikl.objects.filter(aktivan=True) if a.ispod_minimuma()]
+
+    artikli_alarm= [a for a in Artikl.objects.filter(aktivan=True) if a.ispod_minimuma()]
 
     
-    zaposlenici = Zaposlenik.objects.filter(aktivan=True).select_related('pozicija').prefetch_related('ugovori', 'evidencije')
+    zaposlenici= Zaposlenik.objects.filter(aktivan=True).select_related('pozicija').prefetch_related('ugovori', 'evidencije')
 
-    
     artikli = Artikl.objects.filter(aktivan=True).select_related('jedinica_mjere')
     potrosnja_artikala = []
     for artikl in artikli:
@@ -63,8 +60,6 @@ def dashboard(request):
     ukupni_troskovi = troskovi_mjesec + racuni_mjesec + place_mjesec
 
     return render(request, 'core/dashboard.html', {
-        'ukupno_zaposlenika':   ukupno_zaposlenika,
-        'neplaceni_racuni':     neplaceni_racuni,
         'artikli_alarm':        artikli_alarm,
         'zaposlenici':          zaposlenici,
         'potrosnja_artikala':   potrosnja_artikala,
@@ -88,7 +83,7 @@ def zaposlenici(request):
 @login_required
 def zaposlenik_forma(request, pk=None):
     zaposlenik = get_object_or_404(Zaposlenik, pk=pk) if pk else None
-    ugovor     = zaposlenik.ugovori.filter(aktivan=True).first() if zaposlenik else None
+    ugovor = Ugovor.objects.filter(zaposlenik=zaposlenik).first() if zaposlenik else None
 
     if request.method == 'POST':
         z_forma = ZaposlenikForma(request.POST, instance=zaposlenik)
@@ -145,7 +140,7 @@ def evidencija_forma(request, pk=None):
         forma = EvidencijaRadaForma(request.POST, instance=evidencija)
         if forma.is_valid():
             ev     = forma.save(commit=False)
-            ugovor = ev.zaposlenik.ugovori.filter(aktivan=True).first()
+            ugovor = Ugovor.objects.filter(zaposlenik=ev.zaposlenik).first()
             if ugovor:
                 ev.tip_ugovora  = ugovor.tip
                 ev.satnica      = ugovor.satnica

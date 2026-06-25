@@ -3,7 +3,7 @@ from .models import (
     Korisnik, Pozicija, Zaposlenik, Ugovor,
     EvidencijaRada, BonusOdbitak, ObracunPlace,
     Kategorija, JedinicaMjere, Artikl, DnevnoStanje,
-    Dobavljac, Racun, StavkaRacuna, Trosak
+    Dobavljac, Racun, Trosak
 )
 
 admin.site.register(Korisnik)
@@ -19,5 +19,4 @@ admin.site.register(Artikl)
 admin.site.register(DnevnoStanje)
 admin.site.register(Dobavljac)
 admin.site.register(Racun)
-admin.site.register(StavkaRacuna)
 admin.site.register(Trosak)

@@ -32,8 +32,8 @@
                     <td>{{ z.email }}</td>
                     <td>{{ z.telefon }}</td>
                     <td>
-                        {% if z.aktivni_ugovor %}
-                            {{ z.aktivni_ugovor.get_tip_display }}
+                        {% if z.ugovor_set.first %}
+                            {{ z.ugovor_set.first.get_tip_display }}
                         {% else %}
                             <span class="text-muted">—</span>
                         {% endif %}

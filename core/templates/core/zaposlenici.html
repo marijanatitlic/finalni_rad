@@ -32,10 +32,10 @@
                     <td>{{ z.email }}</td>
                     <td>{{ z.telefon }}</td>
                     <td>
-                        {% if z.ugovor_set.first %}
-                            {{ z.ugovor_set.first.get_tip_display }}
+                        {% if z.ugovori.first %}
+                            {{ z.ugovori.first.get_tip_display }}
                         {% else %}
-                            <span class="text-muted">—</span>
+                             <span class="text-muted">—</span>
                         {% endif %}
                     </td>
                     <td>

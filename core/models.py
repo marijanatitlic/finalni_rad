@@ -55,7 +55,7 @@ class Ugovor(models.Model):
         (STALNI,     "Stalni radni odnos"),
     ]
 
-    zaposlenik    = models.ForeignKey(Zaposlenik, on_delete=models.CASCADE)
+    zaposlenik = models.ForeignKey(Zaposlenik, on_delete=models.CASCADE, related_name='ugovori')
     tip           = models.CharField(max_length=20, choices=TIP_CHOICES)
     satnica       = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     fiksna_placa  = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -69,23 +69,19 @@ class Ugovor(models.Model):
     def __str__(self):
         return f"{self.zaposlenik} — {self.get_tip_display()}"
 class EvidencijaRada(models.Model):
-    zaposlenik     = models.ForeignKey(Zaposlenik, on_delete=models.CASCADE, related_name="evidencije")
-    mjesec         = models.PositiveSmallIntegerField()
-    godina         = models.PositiveIntegerField()
-    ostvareni_sati = models.DecimalField(max_digits=5, decimal_places=2)
-    tip_ugovora    = models.CharField(max_length=20, choices=Ugovor.TIP_CHOICES, blank=True)
-    satnica        = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
-    fiksna_placa   = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    napomena       = models.TextField(blank=True)
+    zaposlenik = models.ForeignKey(Zaposlenik, on_delete=models.CASCADE, related_name="evidencije")
+    datum      = models.DateField()
+    sati       = models.DecimalField(max_digits=4, decimal_places=2)
+    napomena   = models.TextField(blank=True)
 
     class Meta:
-        unique_together = ["zaposlenik", "mjesec", "godina"]
-        ordering = ["-godina", "-mjesec"]
+        unique_together = ["zaposlenik", "datum"]
+        ordering = ["-datum"]
         verbose_name = "Evidencija rada"
         verbose_name_plural = "Evidencije rada"
 
     def __str__(self):
-        return f"{self.zaposlenik} — {self.mjesec}/{self.godina}"
+        return f"{self.zaposlenik} — {self.datum}: {self.sati}h"
 
 class BonusOdbitak(models.Model):
     BONUS   = "BONUS"
@@ -95,7 +91,9 @@ class BonusOdbitak(models.Model):
         (ODBITAK, "Odbitak"),
     ]
 
-    evidencija = models.ForeignKey(EvidencijaRada, on_delete=models.CASCADE, related_name="bonusi_odbitci")
+    zaposlenik = models.ForeignKey(Zaposlenik, on_delete=models.CASCADE, related_name="bonusi_odbitci")
+    mjesec     = models.PositiveSmallIntegerField()
+    godina     = models.PositiveIntegerField()
     tip        = models.CharField(max_length=10, choices=TIP_CHOICES)
     iznos      = models.DecimalField(max_digits=10, decimal_places=2)
     opis       = models.CharField(max_length=255)
@@ -107,9 +105,11 @@ class BonusOdbitak(models.Model):
     def __str__(self):
         return f"{self.get_tip_display()}: {self.iznos} € — {self.opis}"
 
-
 class ObracunPlace(models.Model):
-    evidencija     = models.OneToOneField(EvidencijaRada, on_delete=models.CASCADE, related_name="obracun")
+    zaposlenik     = models.ForeignKey(Zaposlenik, on_delete=models.CASCADE, related_name="obracuni")
+    mjesec         = models.PositiveSmallIntegerField()
+    godina         = models.PositiveIntegerField()
+    ukupni_sati    = models.DecimalField(max_digits=6, decimal_places=2)
     osnovna_placa  = models.DecimalField(max_digits=10, decimal_places=2)
     ukupni_dodaci  = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     ukupni_odbitci = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -117,13 +117,12 @@ class ObracunPlace(models.Model):
     datum_obracuna = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        unique_together = ["zaposlenik", "mjesec", "godina"]
         verbose_name = "Obračun plaće"
         verbose_name_plural = "Obračuni plaća"
 
     def __str__(self):
-        return f"Obračun — {self.evidencija}: {self.za_isplatu} €"
-
-
+        return f"Obračun — {self.zaposlenik} {self.mjesec}/{self.godina}: {self.za_isplatu} €"
 # inventar
 
 class Kategorija(models.Model):
@@ -186,7 +185,6 @@ class DnevnoStanje(models.Model):
     artikl    = models.ForeignKey(Artikl, on_delete=models.CASCADE, related_name="dnevna_stanja")
     datum     = models.DateField()
     kolicina  = models.DecimalField(max_digits=10, decimal_places=3)
-    nabava    = models.DecimalField(max_digits=10, decimal_places=3, default=0)
     potrosnja = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
 
     class Meta:
@@ -201,16 +199,14 @@ class DnevnoStanje(models.Model):
         ).order_by("-datum").first()
 
         if prethodno:
-            self.potrosnja = prethodno.kolicina + self.nabava - self.kolicina
-            if self.potrosnja < 0:
-                self.potrosnja = Decimal("0")
+            razlika = prethodno.kolicina - self.kolicina
+            self.potrosnja = razlika if razlika >= 0 else Decimal("0")
         else:
             self.potrosnja = None
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.artikl} — {self.datum}: {self.kolicina}"
-
 # ─dobavljaci i racuni
 
 class Dobavljac(models.Model):
@@ -255,6 +251,32 @@ class Racun(models.Model):
     def __str__(self):
         return f"Račun {self.broj_racuna} — {self.dobavljac}"
 
+class StavkaRacuna(models.Model):
+    racun              = models.ForeignKey(Racun, on_delete=models.CASCADE, related_name="stavke")
+    artikl             = models.ForeignKey(Artikl, on_delete=models.PROTECT, related_name="stavke_racuna")
+    kolicina           = models.DecimalField(max_digits=10, decimal_places=3)
+    cijena_po_jedinici = models.DecimalField(max_digits=10, decimal_places=2)
+    ukupno             = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    def save(self, *args, **kwargs):
+        self.ukupno = self.kolicina * self.cijena_po_jedinici
+        super().save(*args, **kwargs)
+   
+        ukupno_racuna = sum(s.ukupno for s in self.racun.stavke.all())
+        Racun.objects.filter(pk=self.racun.pk).update(ukupni_iznos=ukupno_racuna)
+    
+        stanje = DnevnoStanje.objects.filter(
+            artikl=self.artikl, datum=self.racun.datum_racuna
+        ).first()
+        if stanje:
+            stanje.kolicina += self.kolicina
+            stanje.save()
+        else:
+            DnevnoStanje.objects.create(
+                artikl=self.artikl,
+                datum=self.racun.datum_racuna,
+                kolicina=self.kolicina
+        )
 
 class Trosak(models.Model):
     kategorija = models.ForeignKey(Kategorija, on_delete=models.PROTECT, related_name="troskovi")

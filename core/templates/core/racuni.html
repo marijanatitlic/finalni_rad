@@ -31,7 +31,7 @@
                     <td>{{ r.dobavljac }}</td>
                     <td>{{ r.datum_racuna|date:"d.m.Y." }}</td>
                     <td>{{ r.datum_dospijeca|date:"d.m.Y."|default:"—" }}</td>
-                    <td>{{ r.ukupni_iznos }} €</td>
+                    <td>{{ r.ukupni_iznos|floatformat:2 }} €</td>
                     <td>
                         {% if r.status == 'PLACENO' %}
                             <span class="badge" style="background-color: #c6f6d5; color: #276749;">Plaćeno</span>
@@ -40,6 +40,9 @@
                         {% endif %}
                     </td>
                     <td class="text-end pe-3">
+                        <a href="{% url 'racun_stavke' r.pk %}" class="btn btn-sm btn-outline-secondary me-1" title="Stavke">
+                            <i class="bi bi-list-ul"></i>
+                        </a>
                         {% if r.status == 'NEPLACENO' %}
                         <form method="post" action="{% url 'racun_plati' r.pk %}" class="d-inline">
                             {% csrf_token %}

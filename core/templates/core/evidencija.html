@@ -15,17 +15,15 @@
         <form method="get" class="d-flex align-items-center gap-3">
             <label class="text-muted mb-0" style="font-size: 13px;">Mjesec:</label>
             <select name="mjesec" class="form-select form-select-sm" style="width: 130px;">
-                {% for m in "123456789101112"|make_list %}
-                {% endfor %}
-                <option value="1" {% if mjesec == 1 %}selected{% endif %}>Siječanj</option>
-                <option value="2" {% if mjesec == 2 %}selected{% endif %}>Veljača</option>
-                <option value="3" {% if mjesec == 3 %}selected{% endif %}>Ožujak</option>
-                <option value="4" {% if mjesec == 4 %}selected{% endif %}>Travanj</option>
-                <option value="5" {% if mjesec == 5 %}selected{% endif %}>Svibanj</option>
-                <option value="6" {% if mjesec == 6 %}selected{% endif %}>Lipanj</option>
-                <option value="7" {% if mjesec == 7 %}selected{% endif %}>Srpanj</option>
-                <option value="8" {% if mjesec == 8 %}selected{% endif %}>Kolovoz</option>
-                <option value="9" {% if mjesec == 9 %}selected{% endif %}>Rujan</option>
+                <option value="1"  {% if mjesec == 1  %}selected{% endif %}>Siječanj</option>
+                <option value="2"  {% if mjesec == 2  %}selected{% endif %}>Veljača</option>
+                <option value="3"  {% if mjesec == 3  %}selected{% endif %}>Ožujak</option>
+                <option value="4"  {% if mjesec == 4  %}selected{% endif %}>Travanj</option>
+                <option value="5"  {% if mjesec == 5  %}selected{% endif %}>Svibanj</option>
+                <option value="6"  {% if mjesec == 6  %}selected{% endif %}>Lipanj</option>
+                <option value="7"  {% if mjesec == 7  %}selected{% endif %}>Srpanj</option>
+                <option value="8"  {% if mjesec == 8  %}selected{% endif %}>Kolovoz</option>
+                <option value="9"  {% if mjesec == 9  %}selected{% endif %}>Rujan</option>
                 <option value="10" {% if mjesec == 10 %}selected{% endif %}>Listopad</option>
                 <option value="11" {% if mjesec == 11 %}selected{% endif %}>Studeni</option>
                 <option value="12" {% if mjesec == 12 %}selected{% endif %}>Prosinac</option>
@@ -46,57 +44,81 @@
             <thead style="background-color: #f9fafb;">
                 <tr>
                     <th class="px-3">Zaposlenik</th>
+                    <th>Pozicija</th>
                     <th>Tip ugovora</th>
-                    <th>Ostvareni sati</th>
-                    <th>Osnovna plaća</th>
-                    <th>Obračun</th>
                     <th></th>
                 </tr>
             </thead>
             <tbody>
-                {% for ev in evidencije %}
+                {% regroup evidencije by zaposlenik as evidencije_po_zaposleniku %}
+                {% for grupa in evidencije_po_zaposleniku %}
                 <tr>
-                    <td class="px-3">{{ ev.zaposlenik }}</td>
-                    <td>{{ ev.get_tip_ugovora_display }}</td>
-                    <td>{{ ev.ostvareni_sati }} h</td>
+                    <td class="px-3"><strong>{{ grupa.grouper }}</strong></td>
+                    <td>{{ grupa.grouper.pozicija }}</td>
                     <td>
-                        {% if ev.tip_ugovora == 'STUDENTSKI' %}
-                            {{ ev.ostvareni_sati }} × {{ ev.satnica }} €
+                        {% if grupa.grouper.ugovori.first %}
+                            {{ grupa.grouper.ugovori.first.get_tip_display }}
                         {% else %}
-                            {{ ev.fiksna_placa }} €
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if ev.obracun %}
-                            <span class="badge" style="background-color: #c6f6d5; color: #276749;">
-                                {{ ev.obracun.za_isplatu }} €
-                            </span>
-                        {% else %}
-                            <span class="text-muted" style="font-size: 13px;">Nije generiran</span>
+                            <span class="text-muted">—</span>
                         {% endif %}
                     </td>
                     <td class="text-end pe-3">
-                        <a href="{% url 'bonus_dodaj' ev.pk %}" class="btn btn-sm btn-outline-secondary me-1" title="Bonusi/odbitci">
+                        <button class="btn btn-sm btn-outline-secondary me-1"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#detalji-{{ grupa.grouper.pk }}">
+                            <i class="bi bi-list-ul"></i> Detalji
+                        </button>
+                        <a href="{% url 'bonus_dodaj' grupa.grouper.pk mjesec godina %}"
+                           class="btn btn-sm btn-outline-secondary me-1" title="Bonusi/odbitci">
                             <i class="bi bi-plus-slash-minus"></i>
                         </a>
-                        <a href="{% url 'obracun' ev.pk %}" class="btn btn-sm btn-outline-primary me-1" title="Obračun">
+                        <a href="{% url 'obracun' grupa.grouper.pk mjesec godina %}"
+                           class="btn btn-sm btn-outline-primary" title="Obračun">
                             <i class="bi bi-calculator"></i>
                         </a>
-                        <a href="{% url 'evidencija_uredi' ev.pk %}" class="btn btn-sm btn-outline-secondary me-1">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        <form method="post" action="{% url 'evidencija_obrisi' ev.pk %}" class="d-inline"
-                              onsubmit="return confirm('Obrisati evidenciju?')">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </form>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td colspan="4" class="p-0">
+                        <div class="collapse" id="detalji-{{ grupa.grouper.pk }}">
+                            <table class="table table-sm mb-0" style="background-color: #fafafa;">
+                                <thead>
+                                    <tr>
+                                        <th class="px-5">Datum</th>
+                                        <th>Sati</th>
+                                        <th>Napomena</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ev in grupa.list %}
+                                    <tr>
+                                        <td class="px-5">{{ ev.datum|date:"d.m.Y." }}</td>
+                                        <td>{{ ev.sati }} h</td>
+                                        <td class="text-muted">{{ ev.napomena|default:"—" }}</td>
+                                        <td class="text-end pe-3">
+                                            <a href="{% url 'evidencija_uredi' ev.pk %}" class="btn btn-sm btn-outline-secondary me-1">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <form method="post" action="{% url 'evidencija_obrisi' ev.pk %}" class="d-inline"
+                                                  onsubmit="return confirm('Obrisati evidenciju?')">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center text-muted py-4">Nema evidencija za odabrani mjesec.</td>
+                    <td colspan="4" class="text-center text-muted py-4">Nema evidencija za odabrani mjesec.</td>
                 </tr>
                 {% endfor %}
             </tbody>

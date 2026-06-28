@@ -1,7 +1,7 @@
 from django import forms
 from .models import (
     Pozicija, Zaposlenik, Ugovor, EvidencijaRada, BonusOdbitak,
-    Artikl, DnevnoStanje, Dobavljac, Racun,
+    Artikl, DnevnoStanje, Dobavljac, Racun, StavkaRacuna,
     Trosak, Kategorija, JedinicaMjere
 )
 from datetime import date
@@ -25,26 +25,15 @@ class UgovorForma(forms.ModelForm):
 class EvidencijaRadaForma(forms.ModelForm):
     class Meta:
         model  = EvidencijaRada
-        fields = ['zaposlenik', 'mjesec', 'godina', 'ostvareni_sati', 'napomena']
-
-    def clean(self):
-        cleaned_data = super().clean()
-        mjesec = cleaned_data.get('mjesec')
-        godina = cleaned_data.get('godina')
-        danas  = date.today()
-
-        if godina and (godina < 2000 or godina > danas.year):
-            self.add_error('godina', f'Godina mora biti između 2000 i {danas.year}.')
-        if mjesec and (mjesec < 1 or mjesec > 12):
-            self.add_error('mjesec', 'Mjesec mora biti između 1 i 12.')
-
-        return cleaned_data
+        fields = ['zaposlenik', 'datum', 'sati', 'napomena']
+        widgets = {
+            'datum': forms.DateInput(attrs={'type': 'date'}),
+        }
 
 class BonusOdbitakForma(forms.ModelForm):
     class Meta:
         model  = BonusOdbitak
         fields = ['tip', 'iznos', 'opis']
-
 
 class ArtiklForma(forms.ModelForm):
     class Meta:
@@ -84,7 +73,10 @@ class RacunForma(forms.ModelForm):
         }
 
 
-
+class StavkaRacunaForma(forms.ModelForm):
+    class Meta:
+        model  = StavkaRacuna
+        fields = ['artikl', 'kolicina', 'cijena_po_jedinici']
 
 class TrosakForma(forms.ModelForm):
     class Meta:
@@ -121,7 +113,7 @@ class PozicijaForma(forms.ModelForm):
 # botstrap klase na ova polja
 for forma_klasa in [ZaposlenikForma, UgovorForma, EvidencijaRadaForma, 
                      BonusOdbitakForma, ArtiklForma, DnevnoStanjeForma,
-                     DobavljacForma, RacunForma, TrosakForma, 
+                     DobavljacForma, RacunForma, TrosakForma,
                      KategorijaForma, JedinicaMjereForma, PozicijaForma]:
     for field in forma_klasa.base_fields.values():
         if hasattr(field.widget, 'attrs'):

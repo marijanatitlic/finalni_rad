@@ -13,7 +13,7 @@ from .models import (
 from .forms import (
     ZaposlenikForma, UgovorForma, EvidencijaRadaForma, BonusOdbitakForma,
     ArtiklForma, DnevnoStanjeForma, DobavljacForma, RacunForma,
-    TrosakForma, PozicijaForma, KategorijaForma, JedinicaMjereForma
+    TrosakForma, PozicijaForma, KategorijaForma, JedinicaMjereForma, StavkaRacuna, StavkaRacunaForma
 )
 
 
@@ -29,7 +29,7 @@ def dashboard(request):
     artikli_alarm= [a for a in Artikl.objects.filter(aktivan=True) if a.ispod_minimuma()]
 
     
-    zaposlenici= Zaposlenik.objects.filter(aktivan=True).select_related('pozicija').prefetch_related('ugovori', 'evidencije')
+    zaposlenici = Zaposlenik.objects.filter(aktivan=True).select_related('pozicija').prefetch_related('ugovori', 'evidencije', 'obracuni')
 
     artikli = Artikl.objects.filter(aktivan=True).select_related('jedinica_mjere')
     potrosnja_artikala = []
@@ -54,10 +54,16 @@ def dashboard(request):
     ).aggregate(ukupno=Sum('ukupni_iznos'))['ukupno'] or Decimal('0')
 
     place_mjesec = ObracunPlace.objects.filter(
-        evidencija__mjesec=mjesec, evidencija__godina=godina
+    mjesec=mjesec, godina=godina
     ).aggregate(ukupno=Sum('za_isplatu'))['ukupno'] or Decimal('0')
-
+    
     ukupni_troskovi = troskovi_mjesec + racuni_mjesec + place_mjesec
+    top_artikli = StavkaRacuna.objects.filter(
+       racun__datum_racuna__month=mjesec,
+        racun__datum_racuna__year=godina
+    ).values('artikl__naziv', 'artikl__jedinica_mjere__naziv').annotate(
+        ukupna_kolicina=Sum('kolicina')
+    ).order_by('-ukupna_kolicina')[:5]
 
     return render(request, 'core/dashboard.html', {
         'artikli_alarm':        artikli_alarm,
@@ -69,6 +75,7 @@ def dashboard(request):
         'ukupni_troskovi':      ukupni_troskovi,
         'mjesec':               mjesec,
         'godina':               godina,
+        'top_artikli': top_artikli,
     })
 
 
@@ -76,10 +83,8 @@ def dashboard(request):
 
 @login_required
 def zaposlenici(request):
-    lista = Zaposlenik.objects.select_related('pozicija').all()
+    lista = Zaposlenik.objects.select_related('pozicija').prefetch_related('ugovori').all()
     return render(request, 'core/zaposlenici.html', {'zaposlenici': lista})
-
-
 @login_required
 def zaposlenik_forma(request, pk=None):
     zaposlenik = get_object_or_404(Zaposlenik, pk=pk) if pk else None
@@ -123,8 +128,8 @@ def evidencija(request):
     mjesec = int(request.GET.get('mjesec', date.today().month))
     godina = int(request.GET.get('godina', date.today().year))
     lista  = EvidencijaRada.objects.filter(
-        mjesec=mjesec, godina=godina
-    ).select_related('zaposlenik')
+        datum__month=mjesec, datum__year=godina
+    ).select_related('zaposlenik').order_by('zaposlenik', 'datum')
     return render(request, 'core/evidencija.html', {
         'evidencije': lista,
         'mjesec':     mjesec,
@@ -139,13 +144,7 @@ def evidencija_forma(request, pk=None):
     if request.method == 'POST':
         forma = EvidencijaRadaForma(request.POST, instance=evidencija)
         if forma.is_valid():
-            ev     = forma.save(commit=False)
-            ugovor = Ugovor.objects.filter(zaposlenik=ev.zaposlenik).first()
-            if ugovor:
-                ev.tip_ugovora  = ugovor.tip
-                ev.satnica      = ugovor.satnica
-                ev.fiksna_placa = ugovor.fiksna_placa
-            ev.save()
+            forma.save()
             messages.success(request, 'Evidencija rada uspješno spremljena.')
             return redirect('evidencija')
     else:
@@ -167,46 +166,72 @@ def evidencija_obrisi(request, pk):
 
 
 @login_required
-def bonus_forma(request, pk):
-    evidencija = get_object_or_404(EvidencijaRada, pk=pk)
-    bonusi     = evidencija.bonusi_odbitci.all()
+def bonus_forma(request, zaposlenik_pk, mjesec, godina):
+    zaposlenik = get_object_or_404(Zaposlenik, pk=zaposlenik_pk)
+    bonusi     = BonusOdbitak.objects.filter(
+        zaposlenik=zaposlenik, mjesec=mjesec, godina=godina
+    )
 
     if request.method == 'POST':
         forma = BonusOdbitakForma(request.POST)
         if forma.is_valid():
-            bonus            = forma.save(commit=False)
-            bonus.evidencija = evidencija
+            bonus = forma.save(commit=False)
+            bonus.zaposlenik = zaposlenik
+            bonus.mjesec     = mjesec
+            bonus.godina     = godina
             bonus.save()
             messages.success(request, 'Bonus/odbitak dodan.')
-            return redirect('bonus_dodaj', pk=pk)
+            return redirect('bonus_dodaj', zaposlenik_pk=zaposlenik_pk, mjesec=mjesec, godina=godina)
     else:
         forma = BonusOdbitakForma()
 
     return render(request, 'core/evidencija_forma.html', {
-        'forma':      forma,
-        'evidencija': evidencija,
-        'bonusi':     bonusi,
-        'bonus_mod':  True,
+        'forma':       forma,
+        'zaposlenik':  zaposlenik,
+        'bonusi':      bonusi,
+        'bonus_mod':   True,
+        'mjesec':      mjesec,
+        'godina':      godina,
     })
 
 
 @login_required
-def obracun(request, pk):
-    evidencija = get_object_or_404(EvidencijaRada, pk=pk)
-    postojeci  = ObracunPlace.objects.filter(evidencija=evidencija).first()
+def obracun(request, zaposlenik_pk, miesec, godina):
+    zaposlenik = get_object_or_404(Zaposlenik, pk=zaposlenik_pk)
+    postojeci  = ObracunPlace.objects.filter(
+        zaposlenik=zaposlenik, miesec=miesec, godina=godina
+    ).first()
 
     if request.method == 'POST' and not postojeci:
-        if evidencija.tip_ugovora == Ugovor.STUDENTSKI:
-            osnovna = evidencija.ostvareni_sati * evidencija.satnica
-        else:
-            osnovna = evidencija.fiksna_placa
+        # Dohvati sve evidencije za taj mjesec
+        evidencije = EvidencijaRada.objects.filter(
+            zaposlenik=zaposlenik,
+            datum__month=miesec,
+            datum__year=godina
+        )
+        ukupni_sati = sum(ev.sati for ev in evidencije)
 
-        stavke  = evidencija.bonusi_odbitci.all()
+        # Dohvati ugovor
+        ugovor = Ugovor.objects.filter(zaposlenik=zaposlenik).first()
+
+        # Izračunaj osnovnu plaću
+        if ugovor.tip == Ugovor.STUDENTSKI:
+            osnovna = ukupni_sati * ugovor.satnica
+        else:
+            osnovna = ugovor.fiksna_placa
+
+        # Bonusi i odbitci
+        stavke  = BonusOdbitak.objects.filter(
+            zaposlenik=zaposlenik, miesec=miesec, godina=godina
+        )
         dodaci  = sum(s.iznos for s in stavke if s.tip == BonusOdbitak.BONUS) or Decimal('0')
         odbitci = sum(s.iznos for s in stavke if s.tip == BonusOdbitak.ODBITAK) or Decimal('0')
 
         postojeci = ObracunPlace.objects.create(
-            evidencija     = evidencija,
+            zaposlenik     = zaposlenik,
+            miesec         = miesec,
+            godina         = godina,
+            ukupni_sati    = ukupni_sati,
             osnovna_placa  = osnovna,
             ukupni_dodaci  = dodaci,
             ukupni_odbitci = odbitci,
@@ -215,10 +240,11 @@ def obracun(request, pk):
         messages.success(request, 'Obračun uspješno generiran.')
 
     return render(request, 'core/obracun.html', {
-        'evidencija': evidencija,
+        'zaposlenik': zaposlenik,
         'obracun':    postojeci,
+        'miesec':     miesec,
+        'godina':     godina,
     })
-
 
 # inventar
 
@@ -261,14 +287,13 @@ def dnevno_stanje_forma(request):
         datum = request.POST.get('datum')
         for artikl in artikli:
             kolicina = request.POST.get(f'kolicina_{artikl.pk}')
-            nabava   = request.POST.get(f'nabava_{artikl.pk}') or '0'
             if kolicina:
                 DnevnoStanje.objects.update_or_create(
                     artikl=artikl,
                     datum=datum,
                     defaults={
                         'kolicina': Decimal(kolicina),
-                        'nabava':   Decimal(nabava),
+                        
                     }
                 )
         messages.success(request, 'Dnevno stanje uspješno uneseno.')
@@ -347,6 +372,27 @@ def racun_plati(request, pk):
     messages.success(request, 'Račun označen kao plaćen.')
     return redirect('racuni')
 
+@login_required
+def racun_stavke(request, pk):
+    racun  = get_object_or_404(Racun, pk=pk)
+    stavke = racun.stavke.all()
+
+    if request.method == 'POST':
+        forma = StavkaRacunaForma(request.POST)
+        if forma.is_valid():
+            stavka       = forma.save(commit=False)
+            stavka.racun = racun
+            stavka.save()
+            messages.success(request, 'Stavka dodana.')
+            return redirect('racun_stavke', pk=pk)
+    else:
+        forma = StavkaRacunaForma()
+
+    return render(request, 'core/racun_stavke.html', {
+        'racun':  racun,
+        'stavke': stavke,
+        'forma':  forma,
+    })
 
 # troskovi
 

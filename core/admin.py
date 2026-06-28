@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (
-    Korisnik, Pozicija, Zaposlenik, Ugovor,
+    Korisnik, Pozicija, StavkaRacuna, Zaposlenik, Ugovor,
     EvidencijaRada, BonusOdbitak, ObracunPlace,
     Kategorija, JedinicaMjere, Artikl, DnevnoStanje,
     Dobavljac, Racun, Trosak
@@ -18,5 +18,6 @@ admin.site.register(JedinicaMjere)
 admin.site.register(Artikl)
 admin.site.register(DnevnoStanje)
 admin.site.register(Dobavljac)
+admin.site.register(StavkaRacuna)
 admin.site.register(Racun)
 admin.site.register(Trosak)

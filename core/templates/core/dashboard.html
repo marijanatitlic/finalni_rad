@@ -5,7 +5,6 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 style="color: #2d3748; font-weight: 600;">Pregled poslovanja</h4>
-<!-- za filtrirat misece i godine -->
     <form method="get" class="d-flex align-items-center gap-2">
         <select name="mjesec" class="form-select form-select-sm" style="width: 130px;">
             <option value="1"  {% if mjesec == 1  %}selected{% endif %}>Siječanj</option>
@@ -32,7 +31,6 @@
 
 <div class="row g-4">
 
-    <!-- za zaposlenik i njihove plaće -->
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-header" style="background-color: #f9fafb; font-weight: 600;">
@@ -54,20 +52,16 @@
                             <td class="px-3">{{ z }}</td>
                             <td>{{ z.pozicija }}</td>
                             <td>
-                                {% if z.ugovor_set.first %}
-                                    {{ z.ugovor_set.first.get_tip_display }}
+                                {% if z.ugovori.first %}
+                                    {{ z.ugovori.first.get_tip_display }}
                                 {% else %}
                                     <span class="text-muted">—</span>
                                 {% endif %}
                             </td>
                             <td>
-                                {% for ev in z.evidencije.all %}
-                                    {% if ev.mjesec == mjesec and ev.godina == godina %}
-                                        {% if ev.obracun %}
-                                            <span style="color: #667eea;">{{ ev.obracun.za_isplatu|floatformat:2 }} €</span>
-                                        {% else %}
-                                            <span class="text-muted">Nije obračunato</span>
-                                        {% endif %}
+                                {% for ob in z.obracuni.all %}
+                                    {% if ob.mjesec == mjesec and ob.godina == godina %}
+                                        <span style="color: #667eea;">{{ ob.za_isplatu|floatformat:2 }} €</span>
                                     {% endif %}
                                 {% empty %}
                                     <span class="text-muted">—</span>
@@ -85,7 +79,7 @@
         </div>
     </div>
 
-    <!--inventar potrosnja po dani i misecu tabela-->
+   
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-header" style="background-color: #f9fafb; font-weight: 600;">
@@ -104,8 +98,8 @@
                         {% for p in potrosnja_artikala %}
                         <tr>
                             <td class="px-3">{{ p.artikl.naziv }}</td>
-                            <td>{{ p.dnevna_potrosnja|floatformat:3 }} {{ p.artikl.jedinica_mjere }}</td>
-                            <td>{{ p.mjesecna_potrosnja|floatformat:3 }} {{ p.artikl.jedinica_mjere }}</td>
+                            <td>{{ p.dnevna_potrosnja|floatformat:2 }} {{ p.artikl.jedinica_mjere }}</td>
+                            <td>{{ p.mjesecna_potrosnja|floatformat:2 }} {{ p.artikl.jedinica_mjere }}</td>
                         </tr>
                         {% empty %}
                         <tr>
@@ -118,9 +112,9 @@
         </div>
     </div>
 
-    <!-- Uzbroj svih troskova  -->
+
     <div class="col-md-6">
-        <div class="card">
+        <div class="card h-100">
             <div class="card-header" style="background-color: #f9fafb; font-weight: 600;">
                 <i class="bi bi-cash-stack me-2" style="color: #68d391;"></i>Ukupni troškovi — {{ mjesec }}/{{ godina }}
             </div>
@@ -149,7 +143,50 @@
         </div>
     </div>
 
-    <!-- da dojavi kad je artikal ispod minimuma-->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header" style="background-color: #f9fafb; font-weight: 600;">
+                <i class="bi bi-pie-chart me-2" style="color: #667eea;"></i>Raspodjela troškova — {{ mjesec }}/{{ godina }}
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <canvas id="grafikonTroskova" style="max-height: 220px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+   
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header" style="background-color: #f9fafb; font-weight: 600;">
+                <i class="bi bi-trophy me-2" style="color: #f6ad55;"></i>Top 5 naručivanih artikala — {{ mjesec }}/{{ godina }}
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead style="background-color: #f9fafb;">
+                        <tr>
+                            <th class="px-3">#</th>
+                            <th>Artikl</th>
+                            <th>Ukupno naručeno</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in top_artikli %}
+                        <tr>
+                            <td class="px-3 text-muted">{{ forloop.counter }}</td>
+                            <td>{{ a.artikl__naziv }}</td>
+                            <td>{{ a.ukupna_kolicina|floatformat:2 }} {{ a.artikl__jedinica_mjere__naziv }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-3">Nema podataka.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     {% if artikli_alarm %}
     <div class="col-md-6">
         <div class="card">
@@ -169,8 +206,8 @@
                         {% for artikl in artikli_alarm %}
                         <tr>
                             <td class="px-3">{{ artikl.naziv }}</td>
-                            <td style="color: #fc8181;">{{ artikl.trenutno_stanje|floatformat:3 }} {{ artikl.jedinica_mjere }}</td>
-                            <td class="text-muted">{{ artikl.minimalna_razina|floatformat:3 }} {{ artikl.jedinica_mjere }}</td>
+                            <td style="color: #fc8181;">{{ artikl.trenutno_stanje|floatformat:2 }} {{ artikl.jedinica_mjere }}</td>
+                            <td class="text-muted">{{ artikl.minimalna_razina|floatformat:2 }} {{ artikl.jedinica_mjere }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -181,4 +218,33 @@
     {% endif %}
 
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('grafikonTroskova').getContext('2d');
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Plaće', 'Računi dobavljača', 'Ostali troškovi'],
+            datasets: [{
+                data: [
+                    {{ place_mjesec }},
+                    {{ racuni_mjesec }},
+                    {{ troskovi_mjesec }}
+                ],
+                backgroundColor: ['#667eea', '#f6ad55', '#68d391'],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+</script>
 {% endblock %}

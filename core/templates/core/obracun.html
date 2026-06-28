@@ -14,22 +14,22 @@
     <div class="col-md-5">
         <div class="card mb-3">
             <div class="card-header" style="background-color: #f9fafb; font-weight: 600;">
-                {{ evidencija.zaposlenik }} — {{ evidencija.mjesec }}/{{ evidencija.godina }}
+                {{ zaposlenik }} — {{ mjesec }}/{{ godina }}
             </div>
             <div class="card-body">
                 <table class="table table-sm mb-0">
                     <tr>
+                        <td class="text-muted">Zaposlenik</td>
+                        <td>{{ zaposlenik }}</td>
+                    </tr>
+                    <tr>
                         <td class="text-muted">Tip ugovora</td>
-                        <td>{{ evidencija.get_tip_ugovora_display }}</td>
+                        <td>{{ zaposlenik.ugovor_set.first.get_tip_display }}</td>
                     </tr>
+                    {% if obracun %}
                     <tr>
-                        <td class="text-muted">Ostvareni sati</td>
-                        <td>{{ evidencija.ostvareni_sati }} h</td>
-                    </tr>
-                    {% if evidencija.tip_ugovora == 'STUDENTSKI' %}
-                    <tr>
-                        <td class="text-muted">Satnica</td>
-                        <td>{{ evidencija.satnica }} €/h</td>
+                        <td class="text-muted">Ukupni sati</td>
+                        <td>{{ obracun.ukupni_sati }} h</td>
                     </tr>
                     {% endif %}
                 </table>
